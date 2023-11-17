@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  db:
+    container_name: booknotes-database
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_DB: ${POSTGRES_DB:-booknotes}
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./var/database:/var/lib/postgresql/data/pgdata
+    env_file:
+      - ./.env.local
+    networks:
+      - symfony_app
+
+  php:
+    container_name: booknotes-backend
+    build: ./.docker/php
+    volumes:
+      - ./:/var/www/symfony:cached
+      - symfony_app_var:/var/www/symfony/var
+      - symfony_app_vendor:/var/www/symfony/vendor
+    networks:
+      - symfony_app
+
+  nginx:
+    build:
+      context: ./.docker/nginx
+    volumes:
+      - ./:/var/www/symfony:cached
+      - symfony_app_var:/var/www/symfony/var
+      - symfony_app_vendor:/var/www/symfony/vendor
+    ports:
+      - 80:80
+    networks:
+      - symfony_app
+    env_file:
+      - ./.docker/.env.nginx
+
+volumes:
+  symfony_app_var:
+  symfony_app_vendor:
+  db_app:
+
+networks:
+  symfony_app:
